@@ -1,0 +1,3 @@
+[deps]
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+RiskBudgetingMeanVariance = "f229c2ab-fef4-405d-a999-5503961a83f7"
