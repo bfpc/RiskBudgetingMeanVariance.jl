@@ -104,3 +104,28 @@ function mmv_vol(means, covs, max_vol; positive::Bool=false)
     @warn "Error solving problem. Primal status is $status"
   end
 end
+
+
+# Other portfolios
+
+"""
+    min_vol(means, covs; positive::Bool=false) -> Vector
+
+Returns the weights, expected return and volatility of the minimum
+variance portfolio.
+If `positive`, constrains the weigths to be positive.
+"""
+function min_vol(means, covs; positive::Bool=false)
+  dim = length(means)
+  # Base model
+  m = Model(solver)
+  @variable(m, w[1:dim])
+  @constraint(m, sum(w) == 1)
+  positive && set_lower_bound.(w, 0)
+
+  @objective(m, Min, w' * covs * w)
+  optimize!(m)
+
+  ws = value.(w)
+  return ws, means' * ws, sqrt(ws' * covs * ws)
+end
