@@ -1,3 +1,20 @@
+# Copyright (C) 2023 Bernardo Freitas Paulo da Costa
+#
+# This file is part of RiskBudgetingMeanVariance.jl.
+#
+# RiskBudgetingMeanVariance.jl is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
+#
+# RiskBudgetingMeanVariance.jl is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# RiskBudgetingMeanVariance.jl. If not, see <https://www.gnu.org/licenses/>.
+
 # TODO: check solution for feasibility
 """
     rb_ws_jump(means, covs, B; min_ret=nothing, max_vol=nothing)
