@@ -24,27 +24,10 @@ using Distributions
 using RiskBudgetingMeanVariance
 
 # Parameters
-dim = 5
+include("parameters.jl")
 N   = 252
 n_reps = 100
 n_reps_int = 9
-
-# Covariance matrix
-Corr = [1     0.2  0.4  0.25 0.5
-        0.2   1   -0.2  0.4  0.6
-        0.4  -0.2   1  -0.1  0.3
-        0.25  0.4 -0.1  1    0.3
-        0.5   0.6  0.3  0.3  1  ]
-stds = [0.1, 0.2, 0.15, 0.08, 0.13]
-rets = [0.05, 0.12, 0.09, 0.05, 0.15]
-Covs = [
-        [stds[i]*stds[j]*Corr[i,j] for j in 1:5]
-        for i in 1:5
-       ]
-Covs = hcat(Covs...)
-max_ret = maximum(rets)
-
-normdist = MvNormal(rets, Covs)
 
 # Markowitz and RP portfolios from estimated parameters
 
