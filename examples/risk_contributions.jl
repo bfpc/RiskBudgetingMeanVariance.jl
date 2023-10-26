@@ -61,11 +61,16 @@ title = "Entropy"
 rng = MersenneTwister(13)
 B = ones(dim)
 
-# fig, axs = plt.subplots(ncols=3, nrows=3, figsize=(18,13))
-plt.figure()
 handle_sample = nothing
 handle_pop = nothing
 
+plot_contributions = false
+if plot_contributions
+  fig, axs = plt.subplots(ncols=3, nrows=3, figsize=(18,13))
+  fig.suptitle("Evolution of risk contributions for 9 different samples")
+end
+
+plt.figure()
 for i in 1:n_reps_int
   print("Rep $i: ")
   returns = rand(rng, normdist, N)
@@ -93,13 +98,12 @@ for i in 1:n_reps_int
     push!(ws, w_rb_i)
   end
   global handle_sample, = plt.plot(0:20, [measure(risk_contributions(Covs, wi)) for wi in ws], color="C0", alpha=0.1, label="Samples")
-  # axs[i].stackplot(0:20, 100*hcat([risk_contributions(Covs, ws_i) for ws_i in ws]...))
+  plot_contributions && axs[i].stackplot(0:20, 100*hcat([risk_contributions(Covs, ws_i) for ws_i in ws]...))
 
   println()
 end
 
 # (True) Markowitz and RB portfolios
-# plt.figure() # only activate for stackplot
 
 begin
   w_mmv = mmv_vol(rets, Covs, 0.1; positive=true)
@@ -120,10 +124,16 @@ begin
     push!(ws, w_rb_i)
   end
   global handle_pop, = plt.plot(0:20, [measure(risk_contributions(Covs, wi)) for wi in ws], color="C1", label="Population", linewidth=2.5)
+  plt.title(title * " of risk contributions")
+  plt.legend(handles=[handle_sample, handle_pop])
+
+  if plot_contributions
+    plt.figure() # only activate for stackplot
+    plt.stackplot(0:20, 100*hcat([risk_contributions(Covs, ws_i) for ws_i in ws]...))
+    plt.title("Evolution of risk contributions for population parameters")
+  end
 
   println()
 end
-plt.title(title * " of risk contributions")
-plt.legend(handles=[handle_sample, handle_pop])
 
 nothing
