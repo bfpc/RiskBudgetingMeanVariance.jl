@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License along with
 # RiskBudgetingMeanVariance.jl. If not, see <https://www.gnu.org/licenses/>.
 
-using Distributions
+using Distributions: MvNormal
 
 # Returns and std's for each asset
 stds = [0.1, 0.2, 0.15, 0.08, 0.13]
