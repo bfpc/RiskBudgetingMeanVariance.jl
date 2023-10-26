@@ -52,17 +52,31 @@ for ret in ret_curve
 end
 
 # Graphs
-fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(13,4))
+fig, (ax1, ax2, ax3) = plt.subplots(ncols=3, figsize=(18,4))
 
-# w_i vs returns
+# w_i vs vol
 ws_stack = hcat([ws[ret] for ret in ret_curve]...)
 # ax1.stackplot(ret_curve, ws_stack)
 ax1.stackplot(vol_curve, ws_stack)
 ax1.set_xlabel("Vol")
 ax1.set_ylabel("Weights")
+ax1.set_title("Portfolio weight distribution")
 
-ax2.plot(vol_curve, ret_curve)
+# RC_i vs vol
+rc_stack = hcat([
+                 risk_contributions(covs, ws[ret])
+                 for ret in ret_curve
+                ]...)
+# ax2.stackplot(ret_curve, rc_stack)
+ax2.stackplot(vol_curve, rc_stack)
 ax2.set_xlabel("Vol")
-ax2.set_ylabel("Return")
+ax2.set_ylabel("Risk contributions")
+ax2.set_title("Portfolio risk distribution")
+
+# Returns vs vol (Markowitz efficient frontier)
+ax3.plot(vol_curve, ret_curve)
+ax3.set_xlabel("Vol")
+ax3.set_ylabel("Return")
+ax3.set_title("Efficient frontier")
 
 nothing
