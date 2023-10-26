@@ -40,7 +40,7 @@ max_ret = maximum(means)
 
 # Markowitz portfolios
 ws = Dict{Float64,Vector{Float64}}()
-risk_ws = Dict{Float64,Float64}()
+vol_curve = Vector{Float64}()
 
 ret_curve = 0.000:0.0005:max_ret
 for ret in ret_curve
@@ -48,9 +48,8 @@ for ret in ret_curve
     mmv_std = sqrt( w_mmv' * covs * w_mmv )
 
     ws[ret] = w_mmv
-    risk_ws[ret] = mmv_std
+    push!(vol_curve, mmv_std)
 end
-vol_curve = [risk_ws[ret] for ret in ret_curve]
 
 # Graphs
 fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(13,4))
