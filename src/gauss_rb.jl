@@ -15,7 +15,23 @@
 # You should have received a copy of the GNU General Public License along with
 # RiskBudgetingMeanVariance.jl. If not, see <https://www.gnu.org/licenses/>.
 
-# Auxiliary function to evaluate standard deviation of a portfolio
+#
+# Risk Budgeting for Volatility risk measure
+#
+
+# Marginal risk and risk contributions
+function marginal_risks(covs, w)
+  Σw = covs * w
+  σ  = sqrt(w' * Σw)
+
+  return Σw/σ
+end
+
+function risk_contributions(covs, w)
+  return w .* marginal_risks(covs, w)
+end
+
+# Auxiliary function to evaluate standard deviation of a portfolio in JuMP
 function std_port(cov, w...)
   d = length(w)
   sqrt(sum(w[i] * cov[i,j] * w[j] for i=1:d for j=1:d))

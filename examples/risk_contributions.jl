@@ -16,18 +16,6 @@
 # RiskBudgetingMeanVariance.jl. If not, see <https://www.gnu.org/licenses/>.
 
 # Auxiliary functions
-# Risk contributions
-function marginal_risks(covs, w)
-  Σw = covs * w
-  σ  = sqrt(w' * Σw)
-
-  return Σw/σ
-end
-
-function risk_contributions(covs, w)
-  return w .* marginal_risks(covs, w)
-end
-
 # Concentration / diversification measures
 function herfindahl(rc)
   ps = rc / sum(rc)
