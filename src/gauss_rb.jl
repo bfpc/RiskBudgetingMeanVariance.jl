@@ -15,6 +15,12 @@
 # You should have received a copy of the GNU General Public License along with
 # RiskBudgetingMeanVariance.jl. If not, see <https://www.gnu.org/licenses/>.
 
+# Auxiliary function to evaluate standard deviation of a portfolio
+function std_port(cov, w...)
+  d = length(w)
+  sqrt(sum(w[i] * cov[i,j] * w[j] for i=1:d for j=1:d))
+end
+
 # TODO: check solution for feasibility
 """
     rb_ws_jump(means, covs, B; min_ret=nothing, max_vol=nothing)
