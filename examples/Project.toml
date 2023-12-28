@@ -1,3 +1,4 @@
 [deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 RiskBudgetingMeanVariance = "f229c2ab-fef4-405d-a999-5503961a83f7"
