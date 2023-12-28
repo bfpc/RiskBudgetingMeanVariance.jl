@@ -109,11 +109,14 @@ vol_curve_ef = [risk_ef[ret] for ret in ret_curve]
 # Graphs
 import PyPlot as plt
 plt.figure()
-plt.plot(vol_curve_ef, ret_curve)
+plt.plot(vol_curve_ef, ret_curve, label="Efficient Frontier")
 plt.scatter(mmv_vols, mmv_rets, label="Markowitz simul")
-plt.scatter(rb_vols, rb_rets, label="RParity simul")
+plt.scatter(rb_vols, rb_rets, label="RiskParity simul")
+plt.axvline(0.1, color="black", linestyle="--", label="Target vol")
+plt.legend()
 plt.xlabel("Vol")
 plt.ylabel("Return")
+plt.title("$(n_reps) estimated RP and Markowitz portfolios")
 
 fig, axs = plt.subplots(ncols=3, nrows=3, figsize=(18,13))
 for (snake, ax) in zip(rb_mmv_curves, axs[:])
