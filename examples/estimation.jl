@@ -38,9 +38,18 @@ rng = MersenneTwister(14);
 mmv_rets = []
 mmv_vols = []
 
+mmv007_rets = []
+mmv007_vols = []
+
+min_vol_rets = []
+min_vol_vols = []
+
 rb_rets = []
 rb_vols = []
 B = ones(dim)
+
+ff_rets = []
+ff_vols = []
 
 for i in 1:n_reps
   returns = rand(rng, normdist, N)
@@ -54,9 +63,21 @@ for i in 1:n_reps
   push!(mmv_rets, w_mmv' * rets)
   push!(mmv_vols, sqrt(w_mmv' * Covs * w_mmv))
 
+  w_mmv007 = mmv_vol(means, covs, 0.075; positive=true)
+  push!(mmv007_rets, w_mmv007' * rets)
+  push!(mmv007_vols, sqrt(w_mmv007' * Covs * w_mmv007))
+
+  w_minvol, _1, _2 = RiskBudgetingMeanVariance.min_vol(means, covs; positive=true)
+  push!(min_vol_rets, w_minvol' * rets)
+  push!(min_vol_vols, sqrt(w_minvol' * Covs * w_minvol))
+
   w_rb = rb_ws(-means, covs, B)
   push!(rb_rets, w_rb' * rets)
   push!(rb_vols, sqrt(w_rb' * Covs * w_rb))
+
+  w_ff = 0.5*(w_mmv + w_rb)
+  push!(ff_rets, w_ff' * rets)
+  push!(ff_vols, sqrt(w_ff' * Covs * w_ff))
 end
 
 # Interpolating RB and MMV
@@ -111,7 +132,10 @@ import PyPlot as plt
 plt.figure()
 plt.plot(vol_curve_ef, ret_curve, label="Efficient Frontier")
 plt.scatter(mmv_vols, mmv_rets, label="Markowitz simul")
+plt.scatter(mmv007_vols, mmv007_rets, label="Markowitz simul 0.07")
+plt.scatter(min_vol_vols, min_vol_rets, label="MinVol simul")
 plt.scatter(rb_vols, rb_rets, label="RiskParity simul")
+plt.scatter(ff_vols, ff_rets, label="50/50 simul")
 plt.axvline(0.1, color="black", linestyle="--", label="Target vol")
 plt.legend()
 plt.xlabel("Vol")
