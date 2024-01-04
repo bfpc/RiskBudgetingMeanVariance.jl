@@ -113,19 +113,24 @@ for i in 1:n_reps_int
 end
 
 # (True) Markowitz efficient frontier
-ws_ef = Dict{Float64,Vector{Float64}}()
-risk_ef = Dict{Float64,Float64}()
+function efficient_frontier(rets, Covs; positive=true)
+  ws_ef = Dict{Float64,Vector{Float64}}()
+  risk_ef = Dict{Float64,Float64}()
 
-ret_curve = 0.060:0.0005:max_ret
-for ret in ret_curve
+  _, min_ret, _ = RiskBudgetingMeanVariance.min_vol(rets, Covs; positive)
+  ret_curve = min_ret:0.0005:max_ret
+  for ret in ret_curve
     w_mmv = mmv_return(rets, Covs, ret; positive=true)
     mmv_std = sqrt( w_mmv' * Covs * w_mmv )
 
     ws_ef[ret] = w_mmv
     risk_ef[ret] = mmv_std
+  end
+  vol_curve_ef = [risk_ef[ret] for ret in ret_curve]
+  return ret_curve, vol_curve_ef
 end
-vol_curve_ef = [risk_ef[ret] for ret in ret_curve]
 
+ret_curve, vol_curve_ef = efficient_frontier(rets, Covs; positive=true)
 
 # Graphs
 import PyPlot as plt
