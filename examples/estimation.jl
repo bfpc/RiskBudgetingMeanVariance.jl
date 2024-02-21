@@ -51,13 +51,21 @@ B = ones(dim)
 ff_rets = []
 ff_vols = []
 
+use_true_rets = false
+use_true_covs = false
 for i in 1:n_reps
   returns = rand(rng, normdist, N)
 
   means = sum(returns, dims=2)/N
   means = means[:,1]
+  if use_true_rets
+    means = rets
+  end
   errs  = returns .- means
   covs  = (errs * errs') / N
+  if use_true_covs
+    covs = Covs
+  end
 
   w_mmv = mmv_vol(means, covs, 0.1; positive=true)
   push!(mmv_rets, w_mmv' * rets)
