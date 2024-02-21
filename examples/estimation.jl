@@ -29,27 +29,32 @@ N   = 252
 n_reps = 100
 n_reps_int = 9
 
-# Markowitz and RP portfolios from estimated parameters
+# Different portfolios from estimated parameters
 
 # Simulated returns
 # rng = MersenneTwister(2);
 rng = MersenneTwister(14);
 
-mmv_rets = []
-mmv_vols = []
+struct Result
+  expected_return::Float64
+  volatility::Float64
+  weights::Vector{Float64}
+end
 
-mmv007_rets = []
-mmv007_vols = []
+cases = ["Markowitz 10% vol",
+  "Markowitz λ",
+  "Min Vol",
+  "RiskParity",
+  "RBMV 10% vol 10% ret",
+  "50/50 weigths",
+  "RBMV 10% vol 50/50 ret"
+]
+B = ones(dim) # Risk Parity
 
-min_vol_rets = []
-min_vol_vols = []
-
-rb_rets = []
-rb_vols = []
-B = ones(dim)
-
-ff_rets = []
-ff_vols = []
+results = Dict{String,Vector{Result}}()
+for case in cases
+  results[case] = Result[]
+end
 
 use_true_rets = false
 use_true_covs = false
@@ -67,25 +72,33 @@ for i in 1:n_reps
     covs = Covs
   end
 
-  w_mmv = mmv_vol(means, covs, 0.1; positive=true)
-  push!(mmv_rets, w_mmv' * rets)
-  push!(mmv_vols, sqrt(w_mmv' * Covs * w_mmv))
-
-  w_mmv007 = mmv_vol(means, covs, 0.075; positive=true)
-  push!(mmv007_rets, w_mmv007' * rets)
-  push!(mmv007_vols, sqrt(w_mmv007' * Covs * w_mmv007))
-
-  w_minvol, _1, _2 = RiskBudgetingMeanVariance.min_vol(means, covs; positive=true)
-  push!(min_vol_rets, w_minvol' * rets)
-  push!(min_vol_vols, sqrt(w_minvol' * Covs * w_minvol))
-
-  w_rb = rb_ws(-means, covs, B)
-  push!(rb_rets, w_rb' * rets)
-  push!(rb_vols, sqrt(w_rb' * Covs * w_rb))
-
-  w_ff = 0.5*(w_mmv + w_rb)
-  push!(ff_rets, w_ff' * rets)
-  push!(ff_vols, sqrt(w_ff' * Covs * w_ff))
+  ws = zeros(dim)
+  w_mmv = zeros(dim)
+  w_rp = zeros(dim)
+  for case in cases
+    if case == "Markowitz 10% vol"
+      ws .= mmv_vol(means, covs, 0.1; positive=true)
+      w_mmv .= ws
+    elseif case == "Markowitz λ"
+      ws .= mmv_lambda(means, covs, [1/2]; positive=true)[1]
+    elseif case == "Min Vol"
+      ws .= RiskBudgetingMeanVariance.min_vol(means, covs; positive=true)[1]
+    elseif case == "RiskParity"
+      ws .= rb_ws(-means, covs, B)
+      w_rp .= ws
+    elseif case == "RBMV 10% vol 10% ret"
+      ws = rb_ws(-means, covs, B; min_ret=0.10, max_vol=0.1)
+    # "Derived" portfolios, need to run after all others
+    elseif case == "50/50 weigths"
+      ws .= 0.5*w_mmv + 0.5*w_rp
+    elseif case == "RBMV 10% vol 50/50 ret"
+      targ_ret = (0.50*w_mmv' * means + 0.50*w_rp' * means)
+      ws = rb_ws(-means, covs, B; min_ret=targ_ret, max_vol=0.1)
+    end
+    ret = rets' * ws
+    vol = sqrt(ws' * Covs * ws)
+    push!(results[case], Result(ret, vol, ws))
+  end
 end
 
 # Interpolating RB and MMV
@@ -144,11 +157,11 @@ ret_curve, vol_curve_ef = efficient_frontier(rets, Covs; positive=true)
 import PyPlot as plt
 plt.figure()
 plt.plot(vol_curve_ef, ret_curve, label="Efficient Frontier")
-plt.scatter(mmv_vols, mmv_rets, label="Markowitz simul")
-plt.scatter(mmv007_vols, mmv007_rets, label="Markowitz simul 0.07")
-plt.scatter(min_vol_vols, min_vol_rets, label="MinVol simul")
-plt.scatter(rb_vols, rb_rets, label="RiskParity simul")
-plt.scatter(ff_vols, ff_rets, label="50/50 simul")
+for case in cases
+  rets = [r.expected_return for r in results[case]]
+  vols = [r.volatility for r in results[case]]
+  plt.scatter(vols, rets, label=case)
+end
 plt.axvline(0.1, color="black", linestyle="--", label="Target vol")
 plt.legend()
 plt.xlabel("Vol")
