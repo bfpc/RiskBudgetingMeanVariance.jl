@@ -159,6 +159,7 @@ fig, axs = plt.subplots(ncols=3, nrows=3, figsize=(18,13))
 for (snake, ax) in zip(rb_mmv_curves, axs[:])
   ax.plot(vol_curve_ef, ret_curve)
   ax.plot(first.(snake), last.(snake), ".")
+  ax.scatter([0.075, 0.10], [0.08, 0.12], marker="x", color="black")
 end
 
 nothing
