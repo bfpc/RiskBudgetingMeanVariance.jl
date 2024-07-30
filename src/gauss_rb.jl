@@ -112,7 +112,7 @@ function rb_ws_cvx(means, covs, B; min_ret=nothing, max_vol=nothing)
 
   pb = minimize(port_vol, constr)
 
-  solve!(pb, ECOS.Optimizer; silent_solver=true)
+  solve!(pb, ECOS.Optimizer; silent=true)
   w_rb = w.value[:]
   return w_rb ./ sum(w_rb)
 end

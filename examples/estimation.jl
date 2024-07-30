@@ -29,6 +29,17 @@ N   = 252
 n_reps = 100
 n_reps_int = 9
 
+vol_target = 0.10
+
+function mmv_rb_ret_vol(rets, Covs, vol_target, B)
+  ws = mmv_vol(rets, Covs, vol_target; positive=true)
+  mmv_ret = rets' * ws
+  ws_rb = rb_ws(-rets, Covs, B)
+  rb_ret = rets' * ws_rb
+  rb_vol = sqrt(ws_rb' * Covs * ws_rb)
+  return mmv_ret, vol_target, rb_ret, rb_vol
+end
+
 # Different portfolios from estimated parameters
 
 # Simulated returns
@@ -77,7 +88,7 @@ for i in 1:n_reps
   w_rp = zeros(dim)
   for case in cases
     if case == "Markowitz 10% vol"
-      ws .= mmv_vol(means, covs, 0.1; positive=true)
+      ws .= mmv_vol(means, covs, vol_target; positive=true)
       w_mmv .= ws
     elseif case == "Markowitz λ"
       ws .= mmv_lambda(means, covs, [1/2]; positive=true)[1]
@@ -87,13 +98,13 @@ for i in 1:n_reps
       ws .= rb_ws(-means, covs, B)
       w_rp .= ws
     elseif case == "RBMV 10% vol 10% ret"
-      ws = rb_ws(-means, covs, B; min_ret=0.10, max_vol=0.1)
+      ws = rb_ws(-means, covs, B; min_ret=0.10, max_vol=vol_target)
     # "Derived" portfolios, need to run after all others
     elseif case == "50/50 weigths"
       ws .= 0.5*w_mmv + 0.5*w_rp
     elseif case == "RBMV 10% vol 50/50 ret"
       targ_ret = (0.50*w_mmv' * means + 0.50*w_rp' * means)
-      ws = rb_ws(-means, covs, B; min_ret=targ_ret, max_vol=0.1)
+      ws = rb_ws(-means, covs, B; min_ret=targ_ret, max_vol=vol_target)
     end
     ret = rets' * ws
     vol = sqrt(ws' * Covs * ws)
@@ -114,7 +125,7 @@ for i in 1:n_reps_int
   errs  = returns .- means
   covs  = (errs * errs') / N
 
-  w_mmv = mmv_vol(means, covs, 0.1; positive=true)
+  w_mmv = mmv_vol(means, covs, vol_target; positive=true)
   w_rb = rb_ws(-means, covs, B)
 
   ret_mmv = means' * w_mmv
@@ -162,17 +173,20 @@ for case in cases
   vols = [r.volatility for r in results[case]]
   plt.scatter(vols, rets, label=case)
 end
-plt.axvline(0.1, color="black", linestyle="--", label="Target vol")
+plt.axvline(vol_target, color="black", linestyle="--", label="Target vol")
 plt.legend()
 plt.xlabel("Vol")
 plt.ylabel("Return")
 plt.title("$(n_reps) estimated RP and Markowitz portfolios")
 
+# Interpolating RB and MMV
+(ret_mmv, vol_mmv, ret_rb, vol_rb) = mmv_rb_ret_vol(rets, Covs, vol_target, B)
+
 fig, axs = plt.subplots(ncols=3, nrows=3, figsize=(18,13))
 for (snake, ax) in zip(rb_mmv_curves, axs[:])
   ax.plot(vol_curve_ef, ret_curve)
   ax.plot(first.(snake), last.(snake), ".")
-  ax.scatter([0.075, 0.10], [0.08, 0.12], marker="x", color="black")
+  ax.scatter([vol_rb, vol_mmv], [ret_rb, ret_mmv], marker="x", color="black")
 end
 
 nothing
