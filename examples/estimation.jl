@@ -169,9 +169,9 @@ import PyPlot as plt
 plt.figure()
 plt.plot(vol_curve_ef, ret_curve, label="Efficient Frontier")
 for case in cases
-  rets = [r.expected_return for r in results[case]]
-  vols = [r.volatility for r in results[case]]
-  plt.scatter(vols, rets, label=case)
+  case_rets = [r.expected_return for r in results[case]]
+  case_vols = [r.volatility for r in results[case]]
+  plt.scatter(case_vols, case_rets, label=case)
 end
 plt.axvline(vol_target, color="black", linestyle="--", label="Target vol")
 plt.legend()
