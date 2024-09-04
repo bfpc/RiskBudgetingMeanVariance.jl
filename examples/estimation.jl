@@ -164,6 +164,11 @@ end
 
 ret_curve, vol_curve_ef = efficient_frontier(rets, Covs; positive=true)
 
+# 1/N
+w_1n = ones(dim)/dim
+ret_1n = rets' * w_1n
+vol_1n = sqrt(w_1n' * Covs * w_1n)
+
 # Graphs
 import PyPlot as plt
 plt.figure()
@@ -173,6 +178,7 @@ for case in cases
   case_vols = [r.volatility for r in results[case]]
   plt.scatter(case_vols, case_rets, label=case)
 end
+plt.scatter(vol_1n, ret_1n, color="red", marker="x", label="1/N")
 plt.axvline(vol_target, color="black", linestyle="--", label="Target vol")
 plt.legend()
 plt.xlabel("Vol")
