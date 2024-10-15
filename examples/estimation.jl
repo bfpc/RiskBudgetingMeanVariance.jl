@@ -16,7 +16,7 @@
 # RiskBudgetingMeanVariance.jl. If not, see <https://www.gnu.org/licenses/>.
 
 import Pkg
-Pkg.activate(".")
+Pkg.activate("examples")
 
 using Random
 using Distributions
@@ -25,9 +25,10 @@ using RiskBudgetingMeanVariance
 
 # Parameters
 include("parameters.jl")
+
 N   = 252
 n_reps = 100
-n_reps_int = 9
+n_reps_int = 4
 
 vol_target = 0.10
 
@@ -53,10 +54,10 @@ struct Result
 end
 
 cases = ["Markowitz 10% vol",
-  "Markowitz λ",
+  # "Markowitz λ",
   "Min Vol",
   "RiskParity",
-  "RBMV 10% vol 10% ret",
+  # "RBMV 10% vol 10% ret",
   "50/50 weigths",
   "RBMV 10% vol 50/50 ret"
 ]
@@ -108,7 +109,7 @@ for i in 1:n_reps
     end
     ret = rets' * ws
     vol = sqrt(ws' * Covs * ws)
-    push!(results[case], Result(ret, vol, ws))
+    push!(results[case], Result(ret, vol, copy(ws)))
   end
 end
 
@@ -119,6 +120,7 @@ rb_mmv_curves = []
 for i in 1:n_reps_int
   print("Rep $i: ")
   returns = rand(rng, normdist, N)
+  returns = returns[1:dim,:]
 
   means = sum(returns, dims=2)/N
   means = means[:,1]
@@ -180,19 +182,22 @@ for case in cases
 end
 plt.scatter(vol_1n, ret_1n, color="red", marker="x", label="1/N")
 plt.axvline(vol_target, color="black", linestyle="--", label="Target vol")
+# plt.scatter(stds[1:dim], rets[1:dim], color="red", marker="x", label="Assets")
 plt.legend()
 plt.xlabel("Vol")
 plt.ylabel("Return")
-plt.title("$(n_reps) estimated RP and Markowitz portfolios")
+plt.title("Portfolios from $(n_reps) different estimations")
 
 # Interpolating RB and MMV
 (ret_mmv, vol_mmv, ret_rb, vol_rb) = mmv_rb_ret_vol(rets, Covs, vol_target, B)
 
-fig, axs = plt.subplots(ncols=3, nrows=3, figsize=(18,13))
+fig, axs = plt.subplots(ncols=2, nrows=2, figsize=(6,4), sharex=true, sharey=true)
 for (snake, ax) in zip(rb_mmv_curves, axs[:])
   ax.plot(vol_curve_ef, ret_curve)
-  ax.plot(first.(snake), last.(snake), ".")
+  ax.plot(first.(snake), last.(snake), ".", markersize=4)
   ax.scatter([vol_rb, vol_mmv], [ret_rb, ret_mmv], marker="x", color="black")
 end
+
+plt.savefig("examples/chimney_plot.pdf")
 
 nothing
