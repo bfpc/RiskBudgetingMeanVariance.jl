@@ -90,7 +90,7 @@ handle_pop = nothing
 
 plot_contributions = false
 if plot_contributions
-  fig, axs = plt.subplots(ncols=3, nrows=3, figsize=(18,13))
+  fig, axs = plt.subplots(ncols=3, nrows=3, figsize=(18,13), sharey=true)
   fig.suptitle("Evolution of risk contributions for 9 different samples")
 end
 
