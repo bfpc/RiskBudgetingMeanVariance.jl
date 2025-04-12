@@ -16,7 +16,7 @@
 # RiskBudgetingMeanVariance.jl. If not, see <https://www.gnu.org/licenses/>.
 
 import Pkg
-Pkg.activate("examples")
+Pkg.activate(".")
 
 using Random
 using Distributions
@@ -198,7 +198,7 @@ for (snake, ax) in zip(rb_mmv_curves, axs[:])
   ax.scatter([vol_rb, vol_mmv], [ret_rb, ret_mmv], marker="x", color="black")
 end
 
-plt.savefig("examples/chimney_plot.pdf")
+plt.savefig("chimney_plot.pdf")
 
 fig, ax = plt.subplots(ncols=2, figsize=(12,4))
 for i = 1:n_reps
