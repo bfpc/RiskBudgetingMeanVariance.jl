@@ -200,4 +200,45 @@ end
 
 plt.savefig("examples/chimney_plot.pdf")
 
+fig, ax = plt.subplots(ncols=2, figsize=(12,4))
+for i = 1:n_reps
+  rp_res = results["RiskParity"][i]
+  ax[1].plot(1:dim, rp_res.weights, alpha=0.1, color="C1")
+  mv_res = results["Markowitz 10% vol"][i]
+  ax[2].plot(1:dim, mv_res.weights, alpha=0.1, color="C0")
+end
+ax[1].set_title("Risk Parity")
+ax[2].set_title("Markowitz 10% vol")
+
+fig, ax = plt.subplots(ncols=2, figsize=(12,4))
+for i = 1:n_reps
+  rp_res = results["50/50 weigths"][i]
+  ax[1].plot(1:dim, rp_res.weights, alpha=0.1, color="C3")
+  mv_res = results["RBMV 10% vol 50/50 ret"][i]
+  ax[2].plot(1:dim, mv_res.weights, alpha=0.1, color="C2")
+end
+ax[1].set_title("50/50 weigths")
+ax[2].set_title("RBMV 10% vol 50/50 ret")
+ax[1].set_ylim(0, 1)
+ax[2].set_ylim(0, 1)
+
+fig, ax = plt.subplots(ncols=1, figsize=(12,4))
+for i = 1:n_reps
+  rp_res = results["50/50 weigths"][i]
+  mv_res = results["RBMV 10% vol 50/50 ret"][i]
+  ax.plot(1:dim, rp_res.weights .-  mv_res.weights, alpha=0.1, color="C4")
+end
+ax.set_title("Difference in weights")
+
+rp_max = zeros(dim)
+rp_min = zeros(dim)
+mv_max = zeros(dim)
+mv_min = zeros(dim)
+for i = 1:dim
+  rp_max[i] = maximum([r.weights[i] for r in results["RiskParity"]])
+  rp_min[i] = minimum([r.weights[i] for r in results["RiskParity"]])
+  mv_max[i] = maximum([r.weights[i] for r in results["Markowitz 10% vol"]])
+  mv_min[i] = minimum([r.weights[i] for r in results["Markowitz 10% vol"]])
+end
+
 nothing
