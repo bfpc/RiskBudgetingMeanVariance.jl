@@ -65,10 +65,10 @@ function rb_ws_jump(means, covs, B; min_ret=nothing, max_vol=nothing)
 
 
   # Add return / variance constraint
-  if min_ret != nothing
+  if !isnothing(min_ret)
     @constraint(m, ret_bound, -mean_loss >= min_ret * sum(m[:w]))
   end
-  if max_vol != nothing
+  if !isnothing(max_vol)
     @constraint(m, std_bound, std_loss <= max_vol * sum(m[:w]) )
   end
 
@@ -102,10 +102,10 @@ function rb_ws_cvx(means, covs, B; min_ret=nothing, max_vol=nothing)
 
   constr = Convex.Constraint[rb_constr]
   # Add return / variance constraint
-  if min_ret != nothing
+  if !isnothing(min_ret)
     push!(constr, -port_loss >= min_ret * sum(w) )
   end
-  if max_vol != nothing
+  if !isnothing(max_vol)
     push!(constr, port_vol <= max_vol * sum(w) )
   end
 
