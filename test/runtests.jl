@@ -70,4 +70,47 @@ function test_basic()
 
 end
 
+function test_equivalent_jump_convex()
+    # RB weights
+    B = [2, 3, 1]
+
+    # Returns, standard deviation and correlation
+    stds = [0.1, 0.2, 0.2]
+    rets = [0.01, 0.02, 0.015]
+    Corr = [ 1   -0.2  0.1
+            -0.2  1   -0.1
+            0.1 -0.1  1  ]
+
+    # Useful, calculated, parameters
+    dim = length(rets)
+    Covs = [ stds[i]*stds[j]*Corr[i,j] for i in 1:dim, j in 1:dim]
+    max_ret = maximum(rets)
+    _, mmv_min_ret, mmv_min_vol = RiskBudgetingMeanVariance.min_vol(rets, Covs)
+    @test mmv_min_ret ≈ 0.012903225806451611 atol=1e-6
+    @test mmv_min_vol ≈ 0.07615974802782675 atol=1e-6
+
+    # Target volatility
+    target_vol = 0.1
+
+    #
+    # Markowitz and RP portfolios
+    #
+    w_mark = mmv_vol(rets, Covs, target_vol; positive=true)
+    mark_ret = w_mark' * rets
+
+    w_rb = rb_ws(-rets, Covs, B)
+    rb_ret = w_rb' * rets
+
+    # Interpolating RB and MV
+    # The first and last have small feasible sets, so the errors are a bit larger
+    for j in 1:19
+        print("$j, ")
+        target_ret = rb_ret + j/20*(mark_ret - rb_ret)
+        w_rb_i  = RiskBudgetingMeanVariance.rb_ws_cvx(-rets, Covs, B; min_ret=target_ret, max_vol=target_vol)
+        w_rb_ii = RiskBudgetingMeanVariance.rb_ws_jump(-rets, Covs, B; min_ret=target_ret, max_vol=target_vol)
+        @test w_rb_i ≈ w_rb_ii atol=5e-5
+    end
+end
+
 test_basic()
+test_equivalent_jump_convex()
