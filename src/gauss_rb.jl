@@ -32,7 +32,7 @@ function risk_contributions(covs, w)
 end
 
 # Auxiliary function to evaluate standard deviation of a portfolio in JuMP
-function std_port(cov, w...)
+function std_port(cov, w)
   d = length(w)
   sqrt(sum(w[i] * cov[i,j] * w[j] for i=1:d for j=1:d))
 end
@@ -56,11 +56,10 @@ function rb_ws_jump(means, covs, B; min_ret=nothing, max_vol=nothing)
   # Base model
   m = Model(solver)
   @variable(m, w[1:dim] >= 0)
-  @NLconstraint(m, sum(B[i] * log(w[i]) for i=1:dim) >= 0)
+  @constraint(m, sum(B[i] * log(w[i]) for i=1:dim) >= 0)
 
   @expression(m, mean_loss, means' * w)
-  register(m, :f_std, dim, (ws...) -> std_port(covs, ws...); autodiff = true)
-  @NLexpression(m, std_loss, f_std(w...))
+  @expression(m, std_loss, std_port(covs, w))
 
   @objective(m, Min, std_loss)
 
