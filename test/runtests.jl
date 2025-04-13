@@ -39,6 +39,9 @@ function test_basic()
     @test rb_ret ≈ 0.014033636065572732 atol=1e-6
     @test rb_vol ≈ 0.08027116500691502 atol=1e-6
     @test sum(w_rb) ≈ 1 atol=1e-6
+    rb_risk_contributions = RiskBudgetingMeanVariance.risk_contributions(Covs, w_rb)
+    rb_risk_contributions = rb_risk_contributions ./ sum(rb_risk_contributions)
+    @test rb_risk_contributions ≈ B ./ sum(B) atol=1e-6
 
     # Interpolating RB and MV
     int_curve = []
