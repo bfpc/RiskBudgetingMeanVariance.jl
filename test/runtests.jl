@@ -113,7 +113,44 @@ function test_equivalent_jump_convex()
         w_rb_ii = RiskBudgetingMeanVariance.rb_ws_jump(-rets, Covs, B; min_ret=target_ret, max_vol=target_vol)
         @test w_rb_i ≈ w_rb_ii atol=5e-5
     end
+    println()
+end
+
+function test_markowitz()
+    # Returns, standard deviation and correlation
+    stds = [0.1, 0.2, 0.2]
+    rets = [0.01, 0.02, 0.015]
+    Corr = [ 1   -0.2  0.1
+            -0.2  1   -0.1
+            0.1 -0.1  1  ]
+
+    # Useful, calculated, parameters
+    dim = length(rets)
+    Covs = [ stds[i]*stds[j]*Corr[i,j] for i in 1:dim, j in 1:dim]
+
+    # Using risk-aversion parameter
+    lambdas = [0.1, 0.3, 1.0, 3.0, 10.0]
+    ws_markowitz = mmv_lambda(rets, Covs, lambdas; positive=true)
+    returns_markowitz = [w' * rets for w in ws_markowitz]
+    volatilities_markowitz = [sqrt(w' * Covs * w) for w in ws_markowitz]
+
+    # Basic sanity check
+    for i in 1:4
+        @test returns_markowitz[i] <= returns_markowitz[i+1] - 1e-6
+        @test volatilities_markowitz[i] <= volatilities_markowitz[i+1] - 1e-6
+    end
+
+    # Test too high target return
+    target_return = 0.03
+    w_mmv = mmv_return(rets, Covs, target_return; positive=true)
+    @test isnothing(w_mmv)
+
+    # Test too low target volatility
+    target_vol = 0.05
+    w_mmv = mmv_vol(rets, Covs, target_vol; positive=true)
+    @test isnothing(w_mmv)
 end
 
 test_basic()
 test_equivalent_jump_convex()
+test_markowitz()
