@@ -10,5 +10,6 @@ include("gauss_rb.jl")
 
 export mmv_lambda, mmv_return, mmv_vol, rb_ws
 export risk_contributions
+export RBSolveError
 
 end # module RiskBudgetingMeanVariance
