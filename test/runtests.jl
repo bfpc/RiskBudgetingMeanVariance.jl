@@ -1,5 +1,7 @@
 using Test
 using RiskBudgetingMeanVariance
+using LinearAlgebra
+using Random
 
 function test_basic()
     # RB weights
@@ -53,6 +55,7 @@ function test_basic()
         ret_i = rets' * w_rb_i
         @test ret_i >= target_ret - 1e-6
         vol_i = sqrt(w_rb_i' * Covs * w_rb_i)
+        @test vol_i <= target_vol + 1e-6
         @test vol_i >= cur_vol - 1e-6
         cur_vol = vol_i
         push!(int_curve, (vol_i,ret_i))
@@ -116,6 +119,88 @@ function test_equivalent_jump_convex()
     println()
 end
 
+function test_rb_solver_regression()
+    rng = MersenneTwister(10)
+    n_assets = 11
+    loadings = randn(rng, n_assets, 3)
+    raw_covariance = loadings * transpose(loadings) +
+        Diagonal(0.02 .+ 0.08 .* rand(rng, n_assets))
+    asset_volatilities = 0.08 .+ 0.10 .* rand(rng, n_assets)
+    scaler = Diagonal(asset_volatilities ./ sqrt.(diag(raw_covariance)))
+    covariance = scaler * raw_covariance * scaler
+    covariance = (covariance + transpose(covariance)) / 2
+    expected_returns = 0.01 .+ 0.17 .* rand(rng, n_assets)
+
+    budgets = ones(n_assets)
+    volatility_ceiling = 0.20
+    markowitz = mmv_vol(
+        expected_returns, covariance, volatility_ceiling; positive=true
+    )
+    risk_parity = rb_ws(-expected_returns, covariance, budgets)
+    target_return = 0.8 * dot(expected_returns, markowitz) +
+        0.2 * dot(expected_returns, risk_parity)
+
+    weights = rb_ws(
+        -expected_returns,
+        covariance,
+        budgets;
+        min_ret=target_return,
+        max_vol=volatility_ceiling,
+    )
+    portfolio_return = dot(expected_returns, weights)
+    portfolio_volatility = sqrt(dot(weights, covariance * weights))
+
+    @test all(isfinite, weights)
+    @test all(>(0), weights)
+    @test sum(weights) ≈ 1 atol=1e-6
+    @test portfolio_return >= target_return - 1e-6
+    @test portfolio_volatility <= volatility_ceiling + 1e-6
+
+    scaled_budget_weights = rb_ws(
+        -expected_returns,
+        covariance,
+        1000 .* budgets;
+        min_ret=target_return,
+        max_vol=volatility_ceiling,
+    )
+    @test scaled_budget_weights ≈ weights atol=1e-7
+
+    infeasible_return = maximum(expected_returns) + 0.01
+    ecos_error = try
+        rb_ws(
+            -expected_returns, covariance, budgets;
+            min_ret=infeasible_return,
+        )
+        nothing
+    catch err
+        err
+    end
+    @test ecos_error isa ErrorException
+    if ecos_error isa ErrorException
+        message = sprint(showerror, ecos_error)
+        @test occursin("ECOS failed", message)
+        @test occursin("termination status", message)
+        @test occursin("primal status", message)
+    end
+
+    ipopt_error = try
+        RiskBudgetingMeanVariance.rb_ws_jump(
+            -expected_returns, covariance, budgets;
+            min_ret=infeasible_return,
+        )
+        nothing
+    catch err
+        err
+    end
+    @test ipopt_error isa ErrorException
+    if ipopt_error isa ErrorException
+        message = sprint(showerror, ipopt_error)
+        @test occursin("Ipopt failed", message)
+        @test occursin("termination status", message)
+        @test occursin("primal status", message)
+    end
+end
+
 function test_markowitz()
     # Returns, standard deviation and correlation
     stds = [0.1, 0.2, 0.2]
@@ -153,4 +238,5 @@ end
 
 test_basic()
 test_equivalent_jump_convex()
+test_rb_solver_regression()
 test_markowitz()
