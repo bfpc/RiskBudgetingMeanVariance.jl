@@ -172,6 +172,30 @@ function test_rb_ecos_status()
     end
 end
 
+function test_rb_ipopt_status()
+    budgets = ones(length(ECOS_FAILURE_RETURNS))
+    infeasible_return = maximum(ECOS_FAILURE_RETURNS) + 0.01
+
+    error = try
+        RBMV.rb_ws_jump(
+            -ECOS_FAILURE_RETURNS,
+            ECOS_FAILURE_COVARIANCE,
+            budgets;
+            min_ret=infeasible_return,
+        )
+        nothing
+    catch err
+        err
+    end
+    @test error isa RBMV.RBSolveError
+    if error isa RBMV.RBSolveError
+        @test error.backend == "Ipopt"
+        @test error.termination == RBMV.JuMP.MOI.LOCALLY_INFEASIBLE
+        @test error.primal == RBMV.JuMP.MOI.INFEASIBLE_POINT
+        @test isnothing(error.previous)
+    end
+end
+
 function test_markowitz()
     # Returns, standard deviation and correlation
     stds = [0.1, 0.2, 0.2]
@@ -210,4 +234,5 @@ end
 test_basic()
 test_equivalent_jump_convex()
 test_rb_ecos_status()
+test_rb_ipopt_status()
 test_markowitz()

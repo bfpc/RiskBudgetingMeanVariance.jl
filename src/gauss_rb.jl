@@ -96,6 +96,11 @@ function rb_ws_jump(means, covs, B; min_ret=nothing, max_vol=nothing)
   end
 
   optimize!(m)
+  if !is_solved_and_feasible(m)
+    termination = termination_status(m)
+    primal = primal_status(m)
+    throw(RBSolveError("Ipopt", termination, primal))
+  end
   w_rb = value.(w)
   return w_rb ./ sum(w_rb)
 end
@@ -151,4 +156,3 @@ function rb_ws_cvx(means, covs, B; min_ret=nothing, max_vol=nothing)
 end
 
 rb_ws = rb_ws_cvx
-
