@@ -7,6 +7,13 @@ This package calculates portfolios interpolating between Risk budgeting and
 
 `import Pkg; Pkg.add("RiskBudgetingMeanVariance")`
 
+## Numerical behavior
+
+`rb_ws` first solves the risk-budgeting problem with Convex.jl and ECOS. If
+ECOS does not report a usable solver status, the function warns once and
+retries the same problem with JuMP and Ipopt. If neither solver succeeds,
+`rb_ws` throws an error that reports the status returned by both backends.
+
 ## Example
 
 ```julia
