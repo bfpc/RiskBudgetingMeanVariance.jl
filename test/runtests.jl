@@ -1,5 +1,27 @@
 using Test
 using RiskBudgetingMeanVariance
+using LinearAlgebra
+
+const RBMV = RiskBudgetingMeanVariance
+
+const ECOS_FAILURE_RETURNS = [
+    0.16000572506386948,
+    0.016081789069735807,
+    0.11542468543574563,
+    0.058707578340858185,
+    0.09893007032167594,
+]
+
+const ECOS_FAILURE_COVARIANCE = [
+     0.03224835599967817  -0.010742703577146918   0.006218276496664593   0.01621431174103683   -0.0023929952850974177
+    -0.010742703577146918  0.02309163218758832   -0.009767837694466184  -0.012052611244477358  -0.01649472205271113
+     0.006218276496664593 -0.009767837694466184   0.02611557497423503   -0.005050101712491409   0.009810397434355755
+     0.01621431174103683  -0.012052611244477358  -0.005050101712491409   0.017096633809603138   0.0033002394989673097
+    -0.0023929952850974177 -0.01649472205271113    0.009810397434355755   0.0033002394989673097  0.018754344456747413
+]
+
+const ECOS_FAILURE_TARGET_RETURN = 0.14597057398037097
+const ECOS_FAILURE_MAX_VOL = 0.20
 
 function test_basic()
     # RB weights
@@ -116,6 +138,40 @@ function test_equivalent_jump_convex()
     println()
 end
 
+function test_rb_ecos_status()
+    n_assets = length(ECOS_FAILURE_RETURNS)
+    budgets = ones(n_assets)
+
+    # This portfolio proves that the return and volatility limits are feasible.
+    feasible_weights = fill(0.2 / n_assets, n_assets)
+    feasible_weights[argmax(ECOS_FAILURE_RETURNS)] += 0.8
+    @test dot(ECOS_FAILURE_RETURNS, feasible_weights) >=
+        ECOS_FAILURE_TARGET_RETURN - 1e-12
+    @test sqrt(dot(
+        feasible_weights, ECOS_FAILURE_COVARIANCE * feasible_weights
+    )) <= ECOS_FAILURE_MAX_VOL
+
+    error = try
+        RBMV.rb_ws_cvx(
+            -ECOS_FAILURE_RETURNS,
+            ECOS_FAILURE_COVARIANCE,
+            budgets;
+            min_ret=ECOS_FAILURE_TARGET_RETURN,
+            max_vol=ECOS_FAILURE_MAX_VOL,
+        )
+        nothing
+    catch err
+        err
+    end
+    @test error isa RBMV.RBSolveError
+    if error isa RBMV.RBSolveError
+        @test error.backend == "ECOS"
+        @test error.termination == RBMV.JuMP.MOI.NUMERICAL_ERROR
+        @test error.primal == RBMV.JuMP.MOI.OTHER_RESULT_STATUS
+        @test isnothing(error.previous)
+    end
+end
+
 function test_markowitz()
     # Returns, standard deviation and correlation
     stds = [0.1, 0.2, 0.2]
@@ -153,4 +209,5 @@ end
 
 test_basic()
 test_equivalent_jump_convex()
+test_rb_ecos_status()
 test_markowitz()

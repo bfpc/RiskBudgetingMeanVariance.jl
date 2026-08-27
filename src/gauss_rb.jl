@@ -37,7 +37,30 @@ function std_port(cov, w)
   sqrt(sum(w[i] * cov[i,j] * w[j] for i=1:d for j=1:d))
 end
 
-# TODO: check solution for feasibility
+struct RBSolveError <: Exception
+  backend::String
+  termination::JuMP.MOI.TerminationStatusCode
+  primal::JuMP.MOI.ResultStatusCode
+  previous::Union{Nothing,RBSolveError}
+end
+
+function RBSolveError(backend, termination, primal; previous=nothing)
+  return RBSolveError(backend, termination, primal, previous)
+end
+
+function Base.showerror(io::IO, error::RBSolveError)
+  print(
+    io,
+    "$(error.backend) failed to solve the risk-budgeting problem: " *
+    "termination status $(error.termination), primal status $(error.primal).",
+  )
+  if !isnothing(error.previous)
+    print(io, "\n  Previously: ")
+    showerror(io, error.previous)
+  end
+  return nothing
+end
+
 """
     rb_ws_jump(means, covs, B; min_ret=nothing, max_vol=nothing)
 
@@ -112,10 +135,20 @@ function rb_ws_cvx(means, covs, B; min_ret=nothing, max_vol=nothing)
   pb = minimize(port_vol, constr)
 
   solve!(pb, ECOS.Optimizer; silent=true)
+  termination = Convex.termination_status(pb)
+  primal = Convex.primal_status(pb)
+  valid_termination = termination in (
+    JuMP.MOI.OPTIMAL, JuMP.MOI.ALMOST_OPTIMAL
+  )
+  valid_primal = primal in (
+    JuMP.MOI.FEASIBLE_POINT, JuMP.MOI.NEARLY_FEASIBLE_POINT
+  )
+  if !valid_termination || !valid_primal
+    throw(RBSolveError("ECOS", termination, primal))
+  end
   w_rb = w.value[:]
   return w_rb ./ sum(w_rb)
 end
 
 rb_ws = rb_ws_cvx
-
 
