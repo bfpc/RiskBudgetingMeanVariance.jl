@@ -197,6 +197,58 @@ function test_rb_ipopt_status()
     end
 end
 
+function test_rb_fallback()
+    budgets = ones(length(ECOS_FAILURE_RETURNS))
+    weights = @test_logs (
+        :warn, r"ECOS failed to solve the risk-budgeting problem"
+    ) rb_ws(
+        -ECOS_FAILURE_RETURNS,
+        ECOS_FAILURE_COVARIANCE,
+        budgets;
+        min_ret=ECOS_FAILURE_TARGET_RETURN,
+        max_vol=ECOS_FAILURE_MAX_VOL,
+    )
+
+    @test all(isfinite, weights)
+    @test all(>(0), weights)
+    @test sum(weights) ≈ 1 atol=1e-6
+    @test dot(ECOS_FAILURE_RETURNS, weights) >=
+        ECOS_FAILURE_TARGET_RETURN - 1e-6
+    @test sqrt(dot(weights, ECOS_FAILURE_COVARIANCE * weights)) <=
+        ECOS_FAILURE_MAX_VOL + 1e-6
+end
+
+function test_rb_fallback_failure_policy()
+    budgets = ones(length(ECOS_FAILURE_RETURNS))
+    infeasible_return = maximum(ECOS_FAILURE_RETURNS) + 0.01
+
+    error = try
+        rb_ws(
+            -ECOS_FAILURE_RETURNS,
+            ECOS_FAILURE_COVARIANCE,
+            budgets;
+            min_ret=infeasible_return,
+        )
+        nothing
+    catch err
+        err
+    end
+    @test error isa RBMV.RBSolveError
+    if error isa RBMV.RBSolveError
+        @test error.backend == "Ipopt"
+        @test error.previous isa RBMV.RBSolveError
+        @test error.previous.backend == "ECOS"
+        message = sprint(showerror, error)
+        @test occursin("ECOS", message)
+        @test occursin("Ipopt", message)
+    end
+
+    non_positive_definite = [1.0 2.0; 2.0 1.0]
+    @test_throws PosDefException rb_ws(
+        [-0.1, -0.1], non_positive_definite, ones(2)
+    )
+end
+
 function test_markowitz()
     # Returns, standard deviation and correlation
     stds = [0.1, 0.2, 0.2]
@@ -236,4 +288,6 @@ test_basic()
 test_equivalent_jump_convex()
 test_rb_ecos_status()
 test_rb_ipopt_status()
+test_rb_fallback()
+test_rb_fallback_failure_policy()
 test_markowitz()

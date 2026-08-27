@@ -155,4 +155,28 @@ function rb_ws_cvx(means, covs, B; min_ret=nothing, max_vol=nothing)
   return w_rb ./ sum(w_rb)
 end
 
-rb_ws = rb_ws_cvx
+function rb_ws(means, covs, B; min_ret=nothing, max_vol=nothing)
+  try
+    return rb_ws_cvx(means, covs, B; min_ret, max_vol)
+  catch ecos_error
+    ecos_error isa RBSolveError || rethrow()
+    @warn(
+      "ECOS failed to solve the risk-budgeting problem; retrying with Ipopt. " *
+      "Further occurrences are not reported.",
+      termination=ecos_error.termination,
+      primal=ecos_error.primal,
+      maxlog=1,
+    )
+    try
+      return rb_ws_jump(means, covs, B; min_ret, max_vol)
+    catch ipopt_error
+      ipopt_error isa RBSolveError || rethrow()
+      throw(RBSolveError(
+        ipopt_error.backend,
+        ipopt_error.termination,
+        ipopt_error.primal;
+        previous=ecos_error,
+      ))
+    end
+  end
+end
