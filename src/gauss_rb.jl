@@ -155,6 +155,22 @@ function rb_ws_cvx(means, covs, B; min_ret=nothing, max_vol=nothing)
   return w_rb ./ sum(w_rb)
 end
 
+"""
+    rb_ws(means, covs, B; min_ret=nothing, max_vol=nothing)
+
+Weights (positive, summing 1) of the interpolating Risk-Budgeting portfolio
+corresponding to volatility contributions `B`. Optional `min_ret` and
+`max_vol` constraints can move the result away from strict Risk-Budgeting.
+
+`means` is the mean loss of each asset (so is typically negative), and `covs`
+is the covariance matrix of losses. The risk budgets in `B` are passed to each
+solver as supplied.
+
+The problem is first solved with Convex.jl and ECOS. If ECOS does not report a
+usable termination and primal status, `rb_ws` warns and retries the same problem
+with JuMP and Ipopt. If neither backend reports a usable solution, a descriptive
+error includes the status reported by both solvers.
+"""
 function rb_ws(means, covs, B; min_ret=nothing, max_vol=nothing)
   try
     return rb_ws_cvx(means, covs, B; min_ret, max_vol)
