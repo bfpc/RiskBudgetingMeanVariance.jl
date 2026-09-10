@@ -75,6 +75,7 @@ function test_basic()
         ret_i = rets' * w_rb_i
         @test ret_i >= target_ret - 1e-6
         vol_i = sqrt(w_rb_i' * Covs * w_rb_i)
+        @test vol_i <= target_vol + 1e-6
         @test vol_i >= cur_vol - 1e-6
         cur_vol = vol_i
         push!(int_curve, (vol_i,ret_i))
