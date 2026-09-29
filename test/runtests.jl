@@ -300,10 +300,12 @@ function test_markowitz()
     @test isnothing(w_mmv)
 end
 
-test_basic()
-test_equivalent_jump_convex()
-test_rb_ecos_status()
-test_rb_ipopt_status()
-test_rb_fallback()
-test_rb_fallback_failure_policy()
-test_markowitz()
+@testset "Basic" test_basic()
+@testset "JuMP ≈ Convex" test_equivalent_jump_convex()
+@testset "Error behavior" begin
+  test_rb_ecos_status()
+  test_rb_ipopt_status()
+  test_rb_fallback()
+  test_rb_fallback_failure_policy()
+end
+@testset "Markowitz" test_markowitz()
