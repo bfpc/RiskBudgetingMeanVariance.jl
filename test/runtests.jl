@@ -23,6 +23,11 @@ const ECOS_FAILURE_COVARIANCE = [
 const ECOS_FAILURE_TARGET_RETURN = 0.14597057398037097
 const ECOS_FAILURE_MAX_VOL = 0.20
 
+# ECOS fails on this problem on 1.12 and 1.13, and on LTS-x64, but not on LTS-x86
+const ECOS_EXPECTED_TO_FAIL =
+    VERSION >= v"1.12" ||
+    (v"1.10" <= VERSION < v"1.11" && Sys.WORD_SIZE == 64)
+
 function test_basic()
     # RB weights
     B = [2, 3, 1]
@@ -164,12 +169,16 @@ function test_rb_ecos_status()
     catch err
         err
     end
-    @test error isa RBMV.RBSolveError
-    if error isa RBMV.RBSolveError
-        @test error.backend == "ECOS"
-        @test error.termination == RBMV.JuMP.MOI.NUMERICAL_ERROR
-        @test error.primal == RBMV.JuMP.MOI.OTHER_RESULT_STATUS
-        @test isnothing(error.previous)
+    if ECOS_EXPECTED_TO_FAIL
+        @test error isa RBMV.RBSolveError
+        if error isa RBMV.RBSolveError
+            @test error.backend == "ECOS"
+            @test error.termination == RBMV.JuMP.MOI.NUMERICAL_ERROR
+            @test error.primal == RBMV.JuMP.MOI.OTHER_RESULT_STATUS
+            @test isnothing(error.previous)
+        end
+    else
+        @test isnothing(error)
     end
 end
 
@@ -199,15 +208,22 @@ end
 
 function test_rb_fallback()
     budgets = ones(length(ECOS_FAILURE_RETURNS))
-    weights = @test_logs (
-        :warn, r"ECOS failed to solve the risk-budgeting problem"
-    ) rb_ws(
+    solve() = rb_ws(
         -ECOS_FAILURE_RETURNS,
         ECOS_FAILURE_COVARIANCE,
         budgets;
         min_ret=ECOS_FAILURE_TARGET_RETURN,
         max_vol=ECOS_FAILURE_MAX_VOL,
     )
+
+    # Only where ECOS fails does `rb_ws` warn and fall back to Ipopt
+    weights = if ECOS_EXPECTED_TO_FAIL
+        @test_logs (
+            :warn, r"ECOS failed to solve the risk-budgeting problem"
+        ) solve()
+    else
+        solve()
+    end
 
     @test all(isfinite, weights)
     @test all(>(0), weights)
