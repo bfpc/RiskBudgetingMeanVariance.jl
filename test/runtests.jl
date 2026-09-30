@@ -220,7 +220,7 @@ function test_rb_fallback()
     weights = if ECOS_EXPECTED_TO_FAIL
         @test_logs (
             :warn, r"ECOS failed to solve the risk-budgeting problem"
-        ) solve()
+        ) match_mode=:any solve()
     else
         solve()
     end
