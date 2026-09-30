@@ -1,7 +1,7 @@
 name = "RiskBudgetingMeanVariance"
 uuid = "f229c2ab-fef4-405d-a999-5503961a83f7"
 authors = ["Bernardo Freitas Paulo da Costa <bernardofpc@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
